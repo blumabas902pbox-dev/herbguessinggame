@@ -1,0 +1,305 @@
+<!Programmer: Bryan Jay M. Lumabas> 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess My Secrets: Herb Edition</title>
+    
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            text-align: center; 
+            padding: 20px; 
+            transition: background 0.5s ease; 
+            background-color: #FFFFFF; 
+            min-height: 100vh;
+            margin: 0;
+        }
+        .game-card { 
+            max-width: 480px; 
+            margin: 30px auto; 
+            padding: 30px; 
+            border-radius: 20px; 
+            background: #F7F7F7; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
+        }
+        .info { 
+            font-size: 0.85em; 
+            color: #7F8C8D; 
+            margin-bottom: 20px; 
+            border-bottom: 2px solid #228B22; 
+            padding-bottom: 10px; 
+            text-align: left;
+        }
+        h1 { color: #2D5A27; margin-bottom: 10px; font-size: 1.5em; }
+        #hint { font-style: italic; color: #2D5A2D; margin-bottom: 5px; font-weight: 500; }
+        #riddle { font-weight: bold; color: #40B5AD; margin-bottom: 20px; font-size: 1.1em; line-height: 1.4; }
+        
+        .img-container {
+            width: 100%;
+            height: 220px;
+            background-color: #e8e8e8;
+            border-radius: 12px;
+            margin: 15px 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        #herbImage {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block; 
+            border-radius: 12px;
+            opacity: 0; 
+            transition: opacity 0.4s ease-in-out;
+        }
+
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #228B22;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            display: none;
+            position: absolute;
+            z-index: 2;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        input { 
+            padding: 12px; 
+            width: 80%; 
+            border: 2px solid #228B22; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            margin-bottom: 15px;
+            outline: none;
+        }
+        button { 
+            padding: 12px 25px; 
+            cursor: pointer; 
+            background-color: #40B5AD; 
+            color: #ffffff; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            transition: 0.3s; 
+            text-transform: uppercase;
+        }
+        button:hover { background-color: #008B8B; transform: translateY(-2px); }
+        
+        #message { margin-top: 20px; font-weight: bold; min-height: 1.2em; color: #2C3E50; line-height: 1.6; }
+        
+        .trivia-text {
+            display: block;
+            font-size: 0.9em;
+            color: #555555;
+            margin: 10px 0;
+            font-style: italic;
+            background: #ffffff;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #40B5AD;
+        }
+
+        .hidden { display: none; }
+        .penalty-flash { color: #C0392D !important; animation: shake 0.5s; }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            100% { transform: translateX(0); }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="game-card">
+    <div class="info">
+        <strong>Name:</strong> Bryan Jay Madrideo Lumabas<br>
+        <strong>Course:</strong> BSIT<br>
+        <strong>Year & Section:</strong> 2D
+    </div>
+
+    <h1>What Herb Am I?</h1>
+    <p id="hint">Initializing Garden...</p>
+    
+    <div class="img-container">
+        <div id="loader" class="loader"></div>
+        <img id="herbImage" src="" alt="Herb Image">
+    </div>
+    
+    <p id="riddle">Don't Let Me Herb Guessing!</p>
+    
+    <input type="text" id="userInput" placeholder="I dare you! If you can...">
+    <br>
+    <button id="submitBtn">Guess Me</button>
+    
+    <p id="message"></p>
+    <button id="restartBtn" class="hidden">Guess Again</button>
+</div>
+
+<script>
+    const herbs = [
+        "artemisia", "betel", "cilantro", "dill", "eucalyptus", 
+        "fennel", "garlic", "honeysuckle", "immortelle", "jasmine", 
+        "kaffir", "lemongrass", "mint", "neem", "oregano", 
+        "parsley", "quassia", "rosemary", "screwpine", "turmeric", 
+        "urtica", "vanilla", "wintergreen", "xanthium", "yarrow", "zedoary" 
+    ];
+
+    const herbData = {
+        "artemisia": { img: "1kq5JHH0dGyNDE1axflOR5eF1uLb6sph2", riddle: "Sweet mother of herbs!", trivia: "Ancient Roman soldiers reportedly placed mugwort leaves in their sandals to prevent fatigue and protect their feet." },
+        "betel": { img: "1A4T6No6EqBqmZEhiFx8Wt_F_MKmJuG8J", riddle: "Elderly once knew, they chewed and spit this tradition, turning your lips into vibrant red.", trivia: "In many Asian cultures, this practice is a symbol of hospitality and social connection." },
+        "cilantro": { img: "1vD5mmhsMxao8j1cuPgPVWGQrzH-FG9rW", riddle: "To some, I tasted like a fresh citrus delight. While others asked, 'why's there a soap in my taco?'", trivia: "Your genes determine if you perceive this as soapy; it's all about your olfactory sensors." },
+        "dill": { img: "1zFPEO4Av-l_fGu55RfIRTuCKe6G8j2sW", riddle: "Without me, your favorite vinegar-soaked cucumber wouldn't be the same.", trivia: "In ancient Greece, it was believed to be a sign of wealth and used to crown athletes." },
+        "eucalyptus": { img: "1stWoKlfZ4B3a4lkQRN0pgyobpsifwEEF", riddle: "Koalas are happy and full. But, I'm not. My back hurts. I need Vicks Vaporub.", trivia: "This essential oil is a powerful antiseptic, often used in chest rubs to help breathing." },
+        "fennel": { img: "1OUHF-e6DzzUnuwQql4brB-ROAQRq8V2S", riddle: "Once hung o'er the door, thou ghosts didn't stood a chance. I'll guard your home from dark of night.", trivia: "Greek mythology says knowledge was brought to Earth in a hollow stalk of fennel." },
+        "garlic": { img: "1RSqzcC5qfsMXChK7r9_v504UiEntyK-r", riddle: "For chefs, it was a dream, for vampires though, it was a nightmare.", trivia: "It was fed to Egyptian pyramid builders to give them strength and endurance." },
+        "honeysuckle": { img: "1t7K_H67uvtzQc40JWbVKTAE9AFnWRhfZ", riddle: "She sucked at the crown, spilling a honeyed perfume. Dethroned by the sweetness of July.", trivia: "This herb is a symbol of happiness and its scent is said to attract positive energy." },
+        "immortelle": { img: "11vOAz7lKg9cJ9PNVC6xWNM86lqKkc4QV", riddle: "I am an everlasting flower that never fades even if I am being picked.", trivia: "This is a highly prized herb in skincare for anti-aging and skin-renewing properties." },
+        "jasmine": { img: "1TqJmobbHytS6LE8iJvaF3zDLK5GclDpI", riddle: "A scent of me cloys your heart. I am the queen of the night when the sun goes down.", trivia: "It takes about 8,000 hand-picked blossoms to produce just one gram of essential oil." },
+        "kaffir": { img: "1JnuK1au6inBJhHFnHpFva6I-sfF4XyiY", riddle: "Some called me names, I may be the bumpy lime you met, yet my leaves give zips to Thai soups.", trivia: "This lime juice is traditionally used as a natural hair cleanser in Southeast Asia." },
+        "lemongrass": { img: "1X68Mdz9ZVgZFQTQYY3JmEI1xsWMgNDOE", riddle: "Am I tall grass to you? Do I smell zesty citrus, too? If you think so, then you must be a mosquito.", trivia: "Key ingredient in Tom Yum, giving that signature zesty punch." },
+        "mint": { img: "10TRxYqmGkJCOOayH9TH5TtH2zN7nn-LF", riddle: "Hey man! I won't let you lose your cool. Take a deep breath, then hold, then exhale.", trivia: "Ancient Greeks rubbed mint on dining tables as a sign of welcome to guests." },
+        "neem": { img: "1MQVFdY0J1LfItWTx0yKncZaCvS6gEq2M", riddle: "In India, this is known for village pharmacy with its bitter taste and healing power.", trivia: "Almost every part of the tree—seeds, leaves, and bark—is used in traditional medicine." },
+        "oregano": { img: "1R5bpq_baGOrtmUexnIbM6fEGsjHJlmxN", riddle: "Do you guys want a pizza? It has an _____ toppings in it.", trivia: "In ancient Greece, newlyweds were given oregano crowns to symbolize happiness." },
+        "parsley": { img: "1pN67EwrF6RFvqKk7U252OSZmLB-VdbpJ", riddle: "Just a green garnish often left on the side of the salad plate.", trivia: "This herb contains more Vitamin C by weight than an orange. Mindblowing!" },
+        "quassia": { img: "1JUBQ1AI6F4gNGr-1GYc_WVz_bjVmw52j", riddle: "This wood is so much bitter but helpful. Just stop biting your herbs!", trivia: "Named after Quassi, a former slave who discovered its medicinal value in Suriname." },
+        "rosemary": { img: "1IDL0LQGPWNI9q7Gl6d5Jr7z8fYcK0RoL", riddle: "You can be my remembrance, I'm a garden full of roses with thorns and sacred divinity.", trivia: "Ancient students wore rosemary garlands during exams to improve their memory." },
+        "screwpine": { img: "19DRoLKoJqNsFP9um3glfXYzLLrd0rRq6", riddle: "Hi! I'm vanilla of the East. I can turn your rice green. You can call me Pandan.", trivia: "These leaves are often woven into baskets and mats in tropical islands." },
+        "turmeric": { img: "1bHZL8dAsf9dBD_JM8t-Xp5fpkAGGK470", riddle: "I am the golden child from the roots that stains your fingers into rays of sunshine.", trivia: "In medieval Europe, it was called Indian Saffron for its rich golden color." },
+        "urtica": { img: "1WQ9kmnvyDmGuht3imLNTHqYQkKpH5r0j", riddle: "Touch me if you dare and I'll sting. Soak me in water and now I'm a healthy cup of tea.", trivia: "Despite the sting, it is rich in iron and has been used to treat arthritis for centuries." },
+        "vanilla": { img: "1YvO0ut7NkOGI5Jw5eieKqFSA6eE1YXbx", riddle: "This precious orchid pod is the second most expensive spice in the world.", trivia: "First cultivated by the Totonac people of Mexico, who called it the 'black flower'." },
+        "wintergreen": { img: "1hUf_tbTmTzqGAfxqaSKdnr_tSv9rvIED", riddle: "This shrub is for the muscle rubs, rich in methyl salicylate, and pink chewing gum.", trivia: "Native Americans brewed these leaves into a tea to help soothe aching joints." },
+        "xanthium": { img: "16aln1JlWStAYq1Z5PZY9gg8JVqLeGeWG", riddle: "I am a prickly burr that hitches a ride on your dog's fur.", trivia: "The way it sticks to surfaces inspired the invention of Velcro (Magic Tape)!" },
+        "yarrow": { img: "1xsiju371eGW-Y8-VKdqQN3QMnXRuw3wY", riddle: "The one who heals the warrior, named after the hero Achilles. Reminiscent of chamomile.", trivia: "In the Middle Ages, it was used to flavor beer before hops became popular." },
+        "zedoary": { img: "14K42BHZgfH5o8wXbZAMANshyJIR8rhT7", riddle: "I smell like mango but I taste like fire. I last a month in a vase if you want.", trivia: "Highly valued in the old spice trade, but now rarely found outside of Asia." }
+    };
+
+    let secretWord = "";
+    let attemptsLeft = 5;
+    let shuffledIndices = [];
+    let currentIndex = 0;
+
+    const inputField = document.getElementById("userInput");
+    const submitBtn = document.getElementById("submitBtn");
+    const messageDisplay = document.getElementById("message");
+    const hintDisplay = document.getElementById("hint");
+    const riddleDisplay = document.getElementById("riddle");
+    const restartBtn = document.getElementById("restartBtn");
+    const herbImg = document.getElementById("herbImage");
+    const loader = document.getElementById("loader");
+
+    function shuffleAlphabet() {
+        shuffledIndices = Array.from({length: herbs.length}, (_, i) => i);
+        for (let i = shuffledIndices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledIndices[i], shuffledIndices[j]] = [shuffledIndices[j], shuffledIndices[i]];
+        }
+        currentIndex = 0;
+    }
+
+    function initGame() {
+        attemptsLeft = 5;
+        if (shuffledIndices.length === 0 || currentIndex >= shuffledIndices.length) {
+            shuffleAlphabet();
+        }
+
+        secretWord = herbs[shuffledIndices[currentIndex]];
+        currentIndex++;
+        
+        document.body.style.backgroundColor = "#FFFFFF"; 
+        
+        herbImg.style.opacity = "0"; 
+        loader.style.display = "block";
+        
+        messageDisplay.textContent = `You have ${attemptsLeft} attempts left.`;
+        messageDisplay.className = "";
+        messageDisplay.style.color = "#2C3E50";
+        
+        hintDisplay.textContent = `Hint: It starts with '${secretWord[0].toUpperCase()}' (${secretWord.length} letters).`;
+        riddleDisplay.textContent = `Riddle: "${herbData[secretWord].riddle}"`;
+        
+        const fileID = herbData[secretWord].img;
+        herbImg.src = `https://lh3.googleusercontent.com/u/0/d/${fileID}`;
+        
+        herbImg.onload = showImage;
+        herbImg.onerror = () => {
+            herbImg.src = `https://drive.google.com/uc?export=view&id=${fileID}`;
+        };
+        
+        inputField.value = "";
+        inputField.disabled = false;
+        submitBtn.disabled = false;
+        restartBtn.classList.add("hidden");
+    }
+
+    function showImage() {
+        herbImg.style.opacity = "1"; 
+        loader.style.display = "none";
+    }
+
+    function checkGuess() {
+        const rawInput = inputField.value.trim();
+        const words = rawInput.split(/\s+/).filter(w => w.length > 0);
+        const userGuess = rawInput.toLowerCase();
+
+        if (words.length === 0) {
+            messageDisplay.textContent = "Please type a herbal name first!";
+            return;
+        }
+
+        if (words.length >= 2) {
+            attemptsLeft = (words.length >= 4) ? 1 : Math.max(1, attemptsLeft - 2);
+            messageDisplay.innerHTML = `⚠ NO PHRASES! 1 Word Only!<br>Penalty: ${attemptsLeft} life remains!`;
+            messageDisplay.className = "penalty-flash";
+            inputField.value = "";
+            return;
+        }
+
+        if (userGuess === secretWord) {
+            messageDisplay.innerHTML = `Congratulations! You've guessed it!<br><span class="trivia-text">${herbData[secretWord].trivia}</span>`;
+            messageDisplay.style.color = "#27AE60";
+            document.body.style.backgroundColor = "#D5F5E3"; 
+            endGame();
+        } else {
+            attemptsLeft--;
+            if (attemptsLeft > 0) {
+                messageDisplay.innerHTML = `Incorrect. <strong>Did you know?</strong><br><span class="trivia-text">${herbData[secretWord].trivia}</span> You have ${attemptsLeft} attempts left.`;
+                messageDisplay.style.color = "#D96E2D";
+            } else {
+                messageDisplay.textContent = `Game over! The herb was '${secretWord}'.`;
+                messageDisplay.style.color = "#C0392D";
+                document.body.style.backgroundColor = "#FFE6EB"; 
+                endGame();
+            }
+        }
+        inputField.value = "";
+        inputField.focus();
+    }
+
+    function endGame() {
+        inputField.disabled = true;
+        submitBtn.disabled = true;
+        restartBtn.classList.remove("hidden");
+    }
+
+    submitBtn.addEventListener("click", checkGuess);
+    inputField.addEventListener("keypress", (e) => { if (e.key === "Enter") checkGuess(); });
+    restartBtn.addEventListener("click", initGame);
+
+    initGame();
+</script>
+
+</body>
+</html>
